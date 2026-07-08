@@ -10,40 +10,35 @@ jobs:
   compile:
     runs-on: ubuntu-latest
     steps:
-      - name: 拉取仓库源码
+      - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: 配置国内apt镜像 + Ubuntu24.04兼容依赖
+      - name: Install system dependencies & fix libtinfo compat
         run: |
           sudo sed -i "s@http://.*archive.ubuntu.com@https://mirrors.aliyun.com@g" /etc/apt/sources.list
           sudo sed -i "s@http://.*security.ubuntu.com@https://mirrors.aliyun.com@g" /etc/apt/sources.list
           sudo apt update -y
-          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config libpng-dev libssl-dev python3-venv zlib1g-dev libncurses5-dev cmake libffi-dev wget
+          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config libpng-dev libssl-dev python3-venv zlib1g-dev libncurses5-dev cmake libffi-dev
           sudo ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
           sudo ldconfig
 
-      - name: 安装Python加密&打包依赖
+      - name: Install python dependencies
         run: pip3 install buildozer cython pycryptodome --disable-pip-version-check
 
-      - name: 运行加密脚本encrypt.py
+      - name: Run encrypt script
         run: python3 encrypt.py
 
-      - name: 预部署SDK命令工具，提前全部同意协议
+      - name: Write SDK license file to avoid manual agreement
         run: |
-          mkdir -p ~/.android "$ANDROID_HOME/cmdline-tools/latest"
+          mkdir -p ~/.android
           echo "24333f8a63b6825ea99c7ed4482df2b65d1a094da" > ~/.android/repositories.cfg
-          wget -q https://dl.google.com/android/repository/cmdline-tools-linux-11.0.zip -O /tmp/cmd.zip
-          unzip -q /tmp/cmd.zip -d "$ANDROID_HOME/cmdline-tools/latest"
-          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
-          yes | sdkmanager --licenses
 
-      - name: 执行APK打包
-        run: buildozer android debug
+      - name: Compile APK
+        run: yes | buildozer android debug
 
-      - name: 保存APK文件
+      - name: Upload APK file
         uses: actions/upload-artifact@v4
         with:
-          name: 成品APK压缩包
+          name: Output-APK
           path: bin/*.apk
           retention-days: 30
-
