@@ -1,26 +1,42 @@
 name: Build Vulktool APK
 on: [push]
+
+env:
+  JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+  ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+
 jobs:
   compile:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: 安装编译依赖（国内镜像加速）
+
+      - name: 配置系统源+安装全量编译依赖
         run: |
           sudo sed -i "s@http://.*archive.ubuntu.com@https://mirrors.aliyun.com@g" /etc/apt/sources.list
           sudo sed -i "s@http://.*security.ubuntu.com@https://mirrors.aliyun.com@g" /etc/apt/sources.list
           sudo apt update -y
-          sudo apt install git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config libpng-dev libssl-dev python3-venv -y
+          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config libpng-dev libssl-dev python3-venv zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev
+
+      - name: 安装Python打包+加密依赖
+        run: |
           pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
-          pip3 install buildozer pycryptodome
-          export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+          pip3 install buildozer cython pycryptodome
+
       - name: 运行原版加密脚本encrypt.py
         run: python3 encrypt.py
-      - name: 依据原始buildozer.spec执行APK打包
-        run: buildozer android debug
+
+      - name: 预配置Android SDK许可（自动同意所有协议）
+        run: |
+          mkdir -p ~/.android
+          echo -e "24333f8a63b6825ea99c7ed4482df2b65d1a094da" > ~/.android/repositories.cfg
+          mkdir -p $ANDROID_HOME/cmdline-tools
+
+      - name: 执行APK打包（自动应答所有交互确认）
+        run: yes | buildozer android debug
+
       - name: 导出成品APK
         uses: actions/upload-artifact@v4
         with:
           name: 成品安卓APK压缩包
           path: bin/*.apk
-
