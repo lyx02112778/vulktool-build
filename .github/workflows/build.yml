@@ -9,7 +9,7 @@ env:
 
 jobs:
   compile:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 # 改为固定兼容版本，避免Ubuntu新系统的兼容问题
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -26,6 +26,7 @@ jobs:
       - name: Install python dependencies
         run: pip3 install buildozer cython pycryptodome --disable-pip-version-check
 
+      # 如果你的项目不需要加密、根目录没有encrypt.py，把下面这一整段删掉即可
       - name: Run encrypt script
         run: python3 encrypt.py
 
@@ -43,5 +44,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Output-APK
-          path: bin/*.apk
+          path: **/*.apk # 全项目搜索APK，适配不同版本buildozer的输出路径，解决找不到文件问题
           retention-days: 30
+ 
