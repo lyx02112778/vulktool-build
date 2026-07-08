@@ -5,11 +5,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: 安装编译依赖
+      - name: 安装编译依赖（国内镜像加速）
         run: |
+          sudo sed -i "s@http://.*archive.ubuntu.com@https://mirrors.aliyun.com@g" /etc/apt/sources.list
+          sudo sed -i "s@http://.*security.ubuntu.com@https://mirrors.aliyun.com@g" /etc/apt/sources.list
           sudo apt update -y
           sudo apt install git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config libpng-dev libssl-dev python3-venv -y
-          pip3 install buildozer
+          pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+          pip3 install buildozer pycryptodome
           export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
       - name: 运行原版加密脚本encrypt.py
         run: python3 encrypt.py
