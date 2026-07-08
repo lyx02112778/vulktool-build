@@ -4,39 +4,43 @@ on: [push]
 env:
   JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
   ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
+  PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
 
 jobs:
   compile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: 拉取仓库源码
+        uses: actions/checkout@v4
 
-      - name: 配置系统源+安装全量编译依赖
+      - name: 更换国内apt镜像、安装适配Ubuntu新版本依赖 + 动态库兼容补丁
         run: |
           sudo sed -i "s@http://.*archive.ubuntu.com@https://mirrors.aliyun.com@g" /etc/apt/sources.list
           sudo sed -i "s@http://.*security.ubuntu.com@https://mirrors.aliyun.com@g" /etc/apt/sources.list
           sudo apt update -y
-          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config libpng-dev libssl-dev python3-venv zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev
+          sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config libpng-dev libssl-dev python3-venv zlib1g-dev libncurses5-dev cmake libffi-dev
+          # Ubuntu新版无libtinfo5，用系统自带高版本库做软链接兼容旧程序依赖
+          sudo ln -sf /usr/lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5
+          sudo ldconfig
 
-      - name: 安装Python打包+加密依赖
-        run: |
-          pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
-          pip3 install buildozer cython pycryptodome
+      - name: 安装Python打包、AES加密所需依赖
+        run: pip3 install buildozer cython pycryptodome --disable-pip-version-check
 
-      - name: 运行原版加密脚本encrypt.py
+      - name: 运行加密脚本encrypt.py
         run: python3 encrypt.py
 
-      - name: 预配置Android SDK许可（自动同意所有协议）
+      - name: 预写入SDK许可签名，规避交互式手动同意协议
         run: |
-          mkdir -p ~/.android
-          echo -e "24333f8a63b6825ea99c7ed4482df2b65d1a094da" > ~/.android/repositories.cfg
-          mkdir -p $ANDROID_HOME/cmdline-tools
+          mkdir -p ~/.android "$ANDROID_HOME/cmdline-tools"
+          echo "24333f8a63b6825ea99c7ed4482df2b65d1a094da" > ~/.android/repositories.cfg
 
-      - name: 执行APK打包（自动应答所有交互确认）
+      - name: 自动应答全部交互提示，执行APK编译
         run: yes | buildozer android debug
 
-      - name: 导出成品APK
+      - name: 上传打包好的APK产物
         uses: actions/upload-artifact@v4
         with:
           name: 成品安卓APK压缩包
           path: bin/*.apk
+          retention-days: 7
+
