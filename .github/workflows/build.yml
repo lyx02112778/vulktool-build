@@ -5,6 +5,7 @@ env:
   JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
   ANDROID_HOME: /home/runner/.buildozer/android/platform/android-sdk
   PIP_INDEX_URL: https://pypi.tuna.tsinghua.edu.cn/simple
+  BUILDOZER_ALLOW_ROOT: 1
 
 jobs:
   compile:
@@ -34,7 +35,7 @@ jobs:
           echo "24333f8a63b6825ea99c7ed4482df2b65d1a094da" > ~/.android/repositories.cfg
 
       - name: Compile APK
-        run: yes | buildozer android debug
+        run: buildozer android debug <<< $'\n\n\n'
 
       - name: Upload APK file
         uses: actions/upload-artifact@v4
