@@ -29,10 +29,12 @@ jobs:
       - name: Run encrypt script
         run: python3 encrypt.py
 
-      - name: Write SDK license file to avoid manual agreement
+      - name: Write full Android SDK license files
         run: |
-          mkdir -p ~/.android
+          mkdir -p ~/.android/licenses
           echo "24333f8a63b6825ea99c7ed4482df2b65d1a094da" > ~/.android/repositories.cfg
+          echo -n "84831b9409646a918e30573bab4c9c9096d3468d" > ~/.android/licenses/android-sdk-license
+          echo -n "d56f518747949b542f385e410771f320918c91fc" > ~/.android/licenses/android-sdk-preview-license
 
       - name: Compile APK
         run: buildozer android debug <<< $'\n\n\n'
