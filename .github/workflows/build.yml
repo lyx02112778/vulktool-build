@@ -1,4 +1,4 @@
-name: Build Vulktool APK
+me: Build Vulktool APK
 on: [push]
 
 env:
@@ -38,12 +38,14 @@ jobs:
           echo -n "d56f518747949b542f385e410771f320918c91fc" > ~/.android/licenses/android-sdk-preview-license
 
       - name: Compile APK
-        run: buildozer android debug <<< $'\n\n\n'
+        run: |
+          # 传三个回车跳过buildozer交互式配置，避免流程卡住
+          printf '\n\n\n' | buildozer android debug
 
       - name: Upload APK file
         uses: actions/upload-artifact@v4
         with:
           name: Output-APK
-          path: **/*.apk # 全项目搜索APK，适配不同版本buildozer的输出路径，解决找不到文件问题
+          path: **/*.apk # 全项目搜索APK，适配不同版本buildozer的输出路径
           retention-days: 30
  
